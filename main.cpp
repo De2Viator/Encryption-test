@@ -23,16 +23,14 @@ public:
 struct SeriesInfo {
     int max_zero_counter;
     int max_one_counter;
-    int actual_zero_counter;
-    int actual_one_counter;
     bool actual_bit;
+    unsigned int actual_counter;
 
     SeriesInfo() {
         max_one_counter = 0;
         max_zero_counter = 0;
-        actual_zero_counter = 0;
-        actual_one_counter = 0;
         actual_bit = 0;
+        actual_counter = 0;
     }
 };
 
@@ -66,26 +64,19 @@ TestResult test_cypher(std::array<unsigned char, arr_size> byte_arr) {
 
             //Series test
             if(bit == series_info.actual_bit) {
+                series_info.actual_counter++;
                 if(bit) {
-                    series_info.actual_one_counter++;
-                    if(series_info.actual_one_counter > series_info.max_one_counter) {
-                        series_info.max_one_counter = series_info.actual_one_counter;
+                    if(series_info.actual_counter > series_info.max_one_counter) {
+                        series_info.max_one_counter = series_info.actual_counter;
                     }
                 } else {
-                    series_info.actual_zero_counter++;
-                    if(series_info.actual_zero_counter > series_info.max_zero_counter) {
-                        series_info.max_zero_counter = series_info.actual_zero_counter;
+                    if(series_info.actual_counter > series_info.max_zero_counter) {
+                        series_info.max_zero_counter = series_info.actual_counter;
                     }
                 }
             } else {
                 series_info.actual_bit = bit;
-                if(bit) {
-                    series_info.actual_one_counter++;
-                    series_info.actual_zero_counter = 0;
-                } else {
-                    series_info.actual_zero_counter++;
-                    series_info.actual_one_counter = 0;
-                }
+                series_info.actual_counter = 1;
             }
         }
         //Pokker test
