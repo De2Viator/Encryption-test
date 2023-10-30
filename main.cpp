@@ -2,6 +2,7 @@
 #include <array>
 #include <random>
 #include <bitset>
+#include <map>
 #include <unordered_map>
 
 const unsigned int arr_size = 2500;
@@ -12,25 +13,42 @@ public:
     bool monobit;
     bool series;
     bool pokker;
+    bool length;
 
     TestResult() {
         monobit = false;
         series = false;
         pokker = false;
+        length = true;
     }
 };
-
+struct SeriesRanges {
+    unsigned int amount;
+    SeriesRanges(){
+        amount = 0;
+    }
+};
 struct SeriesInfo {
     int max_zero_counter;
     int max_one_counter;
     bool actual_bit;
     unsigned int actual_counter;
+    unsigned short ranges [12] = {2267, 2733, 1079, 1421, 502, 748, 223,
+                                  402, 90, 223, 90, 223};
+    std::map<std::string, SeriesRanges> zero_series_length;
+    std::map<std::string, SeriesRanges> one_series_length;
 
     SeriesInfo() {
         max_one_counter = 0;
         max_zero_counter = 0;
         actual_bit = 0;
         actual_counter = 0;
+        for(int i = 0; i < 6; i++) {
+            std::string map_index = std::to_string(i + 1);
+            if(i+1 == 6) map_index = "6+";
+            one_series_length[map_index] = SeriesRanges();
+            zero_series_length[map_index] = SeriesRanges();
+        }
     }
 };
 
@@ -55,7 +73,7 @@ TestResult test_cypher(std::array<unsigned char, arr_size> byte_arr) {
     SeriesInfo series_info{};
     std::unordered_map<std::bitset<4>, unsigned int> matches;
     const unsigned int pokker_sequence_amount = pow(2, pokker_block_length);
-    for (int i = 0; i < arr_size; i++) {
+    for (int i = 0; i <= arr_size; i++) {
         unsigned char byte = byte_arr[i];
         for (int j = 7; j >= 0; j--) {
             bool bit = (byte >> j) & 1;
@@ -75,6 +93,22 @@ TestResult test_cypher(std::array<unsigned char, arr_size> byte_arr) {
                     }
                 }
             } else {
+                std::string string_counter = std::to_string(series_info.actual_counter);
+
+                if(series_info.actual_bit) {
+                    if(series_info.actual_counter >= 6) {
+                        series_info.one_series_length["6+"].amount += 1;
+                    } else {
+                        series_info.one_series_length[string_counter].amount += 1;
+                    }
+                } else {
+                    if(series_info.actual_counter >= 6) {
+                        series_info.zero_series_length["6+"].amount += 1;
+                    } else {
+                        series_info.zero_series_length[string_counter].amount += 1;
+                    }
+                }
+
                 series_info.actual_bit = bit;
                 series_info.actual_counter = 1;
             }
@@ -118,6 +152,19 @@ TestResult test_cypher(std::array<unsigned char, arr_size> byte_arr) {
     if(series_info.max_one_counter <= 36 && series_info.max_zero_counter <= 36) {
         test_result.series = true;
     }
+
+    for(unsigned int i = 0; i < 6; i++) {
+        std::string map_index = std::to_string(i+1);
+        if( i + 1 == 6) map_index = "6+";
+        unsigned int zero_map = series_info.zero_series_length[map_index].amount;
+        unsigned int one_map = series_info.one_series_length[map_index].amount;
+        unsigned short min = series_info.ranges[i*2];
+        unsigned short max = series_info.ranges[i*2+1];
+        if(!(min < one_map && max > one_map && min < zero_map && max > zero_map)) {
+            test_result.length = false;
+            break;
+        }
+    }
     return test_result;
 }
 
@@ -127,5 +174,6 @@ int main() {
     std::cout<<"Monobyte's test result: "<<(test_result.monobit ? "passed": "failed")<<std::endl;
     std::cout<<"Series' test result: "<<(test_result.series ? "passed": "failed")<<std::endl;
     std::cout<<"Pokker's test result: "<<(test_result.pokker ? "passed": "failed")<<std::endl;
+    std::cout<<"Series' length test result: "<<(test_result.length ? "passed": "failed")<<std::endl;
     return 0;
 }
